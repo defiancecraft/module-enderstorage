@@ -71,13 +71,7 @@
     <dependency>
       <groupId>com.defiancecraft</groupId>
       <artifactId>DefianceCore</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>com.archeinteractive</groupId>
-      <artifactId>DefianceTools</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-      <scope>provided</scope>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
 </project>
