@@ -15,6 +15,7 @@ import java.util.stream.IntStream;
 import net.md_5.bungee.api.ChatColor;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -28,6 +29,7 @@ import com.defiancecraft.modules.enderstorage.database.collections.Banks;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank.DBBankItem;
 import com.mongodb.DBRef;
+import com.mongodb.MongoException;
 
 public class BankInventoryHolder implements InventoryHolder {
 
@@ -41,6 +43,7 @@ public class BankInventoryHolder implements InventoryHolder {
 	private boolean saving = false;
 	
 	private UUID ownerUUID;
+	private UUID viewerUUID;
 	private String ownerName;
 	
 	/**
@@ -58,6 +61,40 @@ public class BankInventoryHolder implements InventoryHolder {
 		this.inventory = Bukkit.createInventory(this, EnderStorage.getConfiguration().maxRows * 9, title);
 		this.inventoryItems = new ItemStack[EnderStorage.getConfiguration().maxRows * 9];
 		this.ownerUUID = p.getUniqueId();
+		this.viewerUUID = p.getUniqueId();
+		this.ownerName = p.getName();
+		
+		BankInventoryHolder.openInventories.put(ownerUUID, this);
+		
+		// TODO: make perms offlineplayer
+		
+	}
+	
+	/**
+	 * Constructs a BankInventoryHolder using an OfflinePlayer;
+	 * note that their permissions will be loaded from the database,
+	 * and their UUID may be retrieved from Mojang, if not present.
+	 * This method is blocking due to the stated conditions.
+	 * 
+	 * @param p OfflinePlayer who owns the bank
+	 * @param viewer Player who will view the bank
+	 * @throws IllegalStateException
+	 * @throws MongoException
+	 */
+	public BankInventoryHolder(OfflinePlayer p, Player viewer) throws IllegalStateException, MongoException {
+		
+		this.title = ChatColor.translateAlternateColorCodes('&', EnderStorage.getConfiguration().bankTitle);
+		
+		try {
+			this.rows = BankUtils.getAllowedRows(p);
+		} catch (IllegalStateException | MongoException e) {
+			throw e;
+		}
+		
+		this.inventory = Bukkit.createInventory(this, EnderStorage.getConfiguration().maxRows * 9, title);
+		this.inventoryItems = new ItemStack[EnderStorage.getConfiguration().maxRows * 9];
+		this.ownerUUID = p.getUniqueId();
+		this.viewerUUID = viewer.getUniqueId();
 		this.ownerName = p.getName();
 		
 		BankInventoryHolder.openInventories.put(ownerUUID, this);
@@ -279,7 +316,7 @@ public class BankInventoryHolder implements InventoryHolder {
 				&& this.getInventory().getViewers().contains(Bukkit.getPlayer(ownerUUID)))
 			throw new IllegalStateException(ownerName + " is already viewing the BankMenu.");
 		
-		Player p = Bukkit.getPlayer(ownerUUID);
+		Player p = Bukkit.getPlayer(viewerUUID);
 		if (p == null)
 			throw new IllegalStateException("Player must be online to open bank.");
 		
@@ -302,7 +339,7 @@ public class BankInventoryHolder implements InventoryHolder {
 			if (bank != null)
 				Database.getCollection(Banks.class).save(bank);
 			
-			Player player = Bukkit.getPlayer(ownerUUID);
+			Player player = Bukkit.getPlayer(viewerUUID);
 			
 			if (player != null) {
 				
@@ -386,6 +423,10 @@ public class BankInventoryHolder implements InventoryHolder {
 	 */
 	public static boolean isUserViewingBank(UUID uuid) {
 		return BankInventoryHolder.openInventories.containsKey(uuid);
+	}
+	
+	public static BankInventoryHolder getOpenBank(UUID uuid) {
+		return isUserViewingBank(uuid) ? openInventories.get(uuid) : null;
 	}
 
 	/**

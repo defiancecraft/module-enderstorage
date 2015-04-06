@@ -1,9 +1,17 @@
 package com.defiancecraft.modules.enderstorage.banks;
 
+import java.util.UUID;
+
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 
+import com.defiancecraft.core.DefianceCore;
+import com.defiancecraft.core.api.User;
+import com.defiancecraft.core.database.documents.DBUser;
+import com.defiancecraft.core.permissions.PermissionConfig;
+import com.defiancecraft.core.permissions.PermissionConfig.Group;
 import com.defiancecraft.modules.enderstorage.EnderStorage;
 
 /**
@@ -32,6 +40,54 @@ public class BankUtils {
 		
 		return rows == -1 ? EnderStorage.getConfiguration().defaultRows :
 			   rows;
+		
+	}
+	
+	/**
+	 * Gets the number of rows a player is allowed, loading
+	 * their permissions from the database (and possibly their
+	 * UUID, if the OfflinePlayer did not contain it)
+	 * 
+	 * @param p OfflinePlayer to retrieve allowed rows for
+	 * @return Number of allowed rows (will default to config's default)
+	 * @throws IllegalStateException If the passed OfflinePlayer was not in the database, or didn't exist.
+	 */
+	public static int getAllowedRows(OfflinePlayer p) throws IllegalStateException {
+		
+		UUID uuid = p.getUniqueId();
+		if (uuid == null) throw new IllegalStateException("Player must have a UUID!");
+		
+		User u = User.findByUUID(uuid);
+		if (u == null) throw new IllegalStateException("User must exist in the database.");
+		
+		return getAllowedRows(u.getDBU());
+		
+	}
+	
+	/**
+	 * Gets the number of rows a player is allowed using
+	 * their permissions.
+	 * 
+	 * @param dbu DBUser to get allowed rows for.
+	 * @return Number of allowed rows (will default to config's default)
+	 */
+	public static int getAllowedRows(DBUser dbu) {
+		
+		PermissionConfig config = DefianceCore.getPermissionManager().getConfig();
+		int allowedRows = EnderStorage.getConfiguration().defaultRows;
+		
+		for (Group g : config.getGroupsByPriority(true)) {
+		
+			// Skip if they don't have this group...
+			if (!dbu.getGroups().contains(g.name))
+				continue;
+			
+			for (String perm : config.getPermissions(g))
+				if (perm.matches("^enderstorage\\.rows\\.\\d+$"))
+					allowedRows = Integer.parseInt(perm.substring(perm.lastIndexOf('.') + 1));
+		}
+		
+		return allowedRows;
 		
 	}
 	
