@@ -5,9 +5,11 @@ import java.util.concurrent.ExecutionException;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.defiancecraft.core.command.CommandRegistry;
 import com.defiancecraft.core.database.collections.Collection;
 import com.defiancecraft.core.modules.Module;
 import com.defiancecraft.modules.enderstorage.banks.BankInventoryHolder;
+import com.defiancecraft.modules.enderstorage.commands.BankCommands;
 import com.defiancecraft.modules.enderstorage.database.collections.Banks;
 import com.defiancecraft.modules.enderstorage.listeners.EnderChestListener;
 import com.defiancecraft.modules.enderstorage.utils.EnderStorageConfig;
@@ -19,10 +21,16 @@ public class EnderStorage extends JavaPlugin implements Module {
 	@Override
 	public void onEnable() {
 		
+		// Initialize config
 		EnderStorage.config = getConfig(EnderStorageConfig.class);
 		
+		// Register events
 		PluginManager manager = getServer().getPluginManager();
 		manager.registerEvents(new EnderChestListener(), this);
+		
+		// Register commands
+		CommandRegistry.registerPlayerCommand(this, "enderchest", BankCommands::enderChest);
+		CommandRegistry.registerPlayerCommand(this, "echest", BankCommands::enderChest);
 		
 	}
 	

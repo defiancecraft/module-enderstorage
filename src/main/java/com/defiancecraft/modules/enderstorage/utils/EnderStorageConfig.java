@@ -1,5 +1,8 @@
 package com.defiancecraft.modules.enderstorage.utils;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -14,6 +17,9 @@ public class EnderStorageConfig {
 	public String upgradeItem = "STAINED_GLASS_PANE:14";
 	public String upgradeText = "&aUpgrade to unlock more slots!";
 	public String failedMsg = "&cYour bank is full, but your items are safe. Upgrade to get more slots, or remove some items.";
+	public String shittyFuckingMessage = "&cYou don't have perms bro.";
+	public String whitelistMsg = "";
+	public List<String> whitelistWorlds = Arrays.asList("world");
 	
 	public ItemStack getUpgradeItem() {
 		
@@ -33,6 +39,15 @@ public class EnderStorageConfig {
 		}
 		
 		return ret;
+		
+	}
+	
+	public boolean isWorldWhitelisted(String name) {
+		
+		for (String w : whitelistWorlds)
+			if (w.equalsIgnoreCase(name)) return true;
+		
+		return false;
 		
 	}
 

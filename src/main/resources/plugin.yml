@@ -1,3 +1,6 @@
 name: EnderStorage
 version: 0.0.1
 main: com.defiancecraft.modules.enderstorage.EnderStorage
+commands:
+  enderchest:
+  echest:
