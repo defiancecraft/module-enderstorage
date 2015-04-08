@@ -377,40 +377,71 @@ public class BankInventoryHolder implements InventoryHolder {
 		
 		return Database.getExecutorService().submit(() -> {
 			
-			User user = User.findByUUIDOrCreate(ownerUUID, ownerName);
-			DBBank bank = Database.getCollection(Banks.class).findByUser(user.getDBU());
-			
-			//
-			// Convert ItemStack[] to List<DBBankItem>
-			//
-			List<DBBankItem> items = new ArrayList<DBBankItem>(bank.getItems());
-			ItemStack[] newItems = getInventory().getContents();
-			
-			// IMPORTANT: must only go up to rows * 9, or else
-			// duplication glitch will occur (dummy items will be
-			// duped)
-			for (int i = 0; i < rows * 9; i++) {
+			try {
 				
-				// Remove it regardless of whether null or not
-				final int j = i;
-				items = items.stream().filter((item) -> item.getSlot() != j).collect(Collectors.toList());
+				User user = User.findByUUIDOrCreate(ownerUUID, ownerName);
+				DBBank bank = Database.getCollection(Banks.class).findByUser(user.getDBU());
 				
-				// Add it back, if not null
-				if (newItems[i] != null)
-					try {
-						items.add(new DBBankItem(newItems[i], i));
-					} catch (IOException e) {}
+				//
+				// Convert ItemStack[] to List<DBBankItem>
+				//
+				List<DBBankItem> items = new ArrayList<DBBankItem>(bank.getItems());
+				ItemStack[] newItems = getInventory().getContents();
+				
+				// IMPORTANT: must only go up to rows * 9, or else
+				// duplication glitch will occur (dummy items will be
+				// duped)
+				for (int i = 0; i < rows * 9; i++) {
+					
+					// Remove it regardless of whether null or not
+					final int j = i;
+					items = items.stream().filter((item) -> item.getSlot() != j).collect(Collectors.toList());
+					
+					// Add it back, if not null
+					if (newItems[i] != null)
+						try {
+							items.add(new DBBankItem(newItems[i], i));
+						} catch (IOException e) {}
+				}
+				
+				// Save it
+				bank.setItems(items);
+				Database.getCollection(Banks.class).save(bank);
+				
+				// Remove from map so they can re-open
+				if (BankInventoryHolder.openInventories.containsKey(ownerUUID))
+					BankInventoryHolder.openInventories.remove(ownerUUID);
+				
+			} catch (Exception e) {
+				
+				Bukkit.getLogger().warning("[SavingBug] Right, listen here you little shit. I've got an exception in here, its class is: [" + e.getClass().getName() + "]");
+				Bukkit.getLogger().warning("[SavingBug] The stack trace of this is length " + e.getStackTrace().length);
+				Bukkit.getLogger().warning("[SavingBug] ==== Exception's Stack Trace:");
+				e.printStackTrace();
+				Bukkit.getLogger().warning("[SavingBug] ==== My motherfucking Stack Trace:");
+				
+				printStackTrace(e, Thread.currentThread().getStackTrace(), false);
+				
 			}
 			
-			// Save it
-			bank.setItems(items);
-			Database.getCollection(Banks.class).save(bank);
-			
-			// Remove from map so they can re-open
-			if (BankInventoryHolder.openInventories.containsKey(ownerUUID))
-				BankInventoryHolder.openInventories.remove(ownerUUID);
-			
 		});
+		
+	}
+	
+	private void printStackTrace(Throwable e, StackTraceElement[] trace, boolean isCause) {
+		printStackTrace(e, trace, isCause, 0);
+	}
+	
+	private void printStackTrace(Throwable e, StackTraceElement[] trace, boolean isCause, int depth) {
+		
+		Bukkit.getLogger().warning("[SavingBug][Trace] " + (isCause ? "caused by: " : "Exception: ") + e.toString());
+		for (StackTraceElement el : trace)
+			Bukkit.getLogger().warning("[SavingBug][Trace]     at " + el.toString());
+		
+		if (e.getCause() != null && depth < 20)
+			printStackTrace(e.getCause(), e.getCause().getStackTrace(), true, depth + 1);
+		else if (depth >= 20)
+			Bukkit.getLogger().warning("[SavingBug] Stopping stack trace dump because recursive function exceeds maximum amount.");
 		
 	}
 	
