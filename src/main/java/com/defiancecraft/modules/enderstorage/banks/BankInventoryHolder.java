@@ -381,6 +381,18 @@ public class BankInventoryHolder implements InventoryHolder {
 				
 				User user = User.findByUUIDOrCreate(ownerUUID, ownerName);
 				DBBank bank = Database.getCollection(Banks.class).findByUser(user.getDBU());
+				Users users = Database.getCollection(Users.class);
+				
+				// Create bank if it doesn't exist (if they opened it, it
+				// should damn well exist)
+				if (bank == null) {
+					
+					Bukkit.getLogger().warning("[SavingBug][NoBank] They had no bank when trying to save it, which would cause a NPE. Attempting to create it...");
+					bank = new DBBank(new DBRef(users.getDB(), users.getCollectionName(), user.getDBU().getId()), new ArrayList<DBBankItem>());
+					Database.getCollection(Banks.class).createBank(bank);
+					Bukkit.getLogger().warning("[SavingBug][NoBank] It might have saved. Probably has, shouldn't be a NPE now.");
+					
+				}
 				
 				//
 				// Convert ItemStack[] to List<DBBankItem>
@@ -412,7 +424,7 @@ public class BankInventoryHolder implements InventoryHolder {
 				if (BankInventoryHolder.openInventories.containsKey(ownerUUID))
 					BankInventoryHolder.openInventories.remove(ownerUUID);
 				
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				
 				Bukkit.getLogger().warning("[SavingBug] Right, listen here you little shit. I've got an exception in here, its class is: [" + e.getClass().getName() + "]");
 				Bukkit.getLogger().warning("[SavingBug] The stack trace of this is length " + e.getStackTrace().length);
