@@ -83,8 +83,10 @@ public class BankUtils {
 				continue;
 			
 			for (String perm : config.getPermissions(g))
-				if (perm.matches("^enderstorage\\.rows\\.\\d+$"))
-					allowedRows = Integer.parseInt(perm.substring(perm.lastIndexOf('.') + 1));
+				if (perm.matches("^enderstorage\\.rows\\.\\d+$")) {
+					int rows = Integer.parseInt(perm.substring(perm.lastIndexOf('.') + 1));
+					if (rows > allowedRows) allowedRows = rows;
+				}
 		}
 		
 		return allowedRows;
