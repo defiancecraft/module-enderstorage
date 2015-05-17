@@ -20,6 +20,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import com.defiancecraft.core.api.User;
 import com.defiancecraft.core.database.Database;
@@ -30,6 +32,7 @@ import com.defiancecraft.modules.enderstorage.database.documents.DBBank;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank.DBBankItem;
 import com.mongodb.DBRef;
 import com.mongodb.MongoException;
+
 
 public class BankInventoryHolder implements InventoryHolder {
 
@@ -351,7 +354,11 @@ public class BankInventoryHolder implements InventoryHolder {
 					);
 				
 				// Open the inv
-				player.openInventory(getInventory());
+				new BukkitRunnable() {
+					public void run() {
+						player.openInventory(getInventory());
+					}
+				}.runTask(JavaPlugin.getPlugin(EnderStorage.class));
 				
 			}
 				
