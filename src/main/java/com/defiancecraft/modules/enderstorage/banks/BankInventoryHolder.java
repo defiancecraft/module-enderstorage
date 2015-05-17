@@ -32,6 +32,7 @@ import com.defiancecraft.modules.enderstorage.database.documents.DBBank;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank.DBBankItem;
 import com.mongodb.DBRef;
 import com.mongodb.MongoException;
+import com.mongodb.WriteResult;
 
 
 public class BankInventoryHolder implements InventoryHolder {
@@ -170,6 +171,9 @@ public class BankInventoryHolder implements InventoryHolder {
 		// everything and hope for the best.
 		if (failed.size() > 0) {
 			
+			Bukkit.getLogger().warning("[SavingBug][LostItems2] Some items failed to actually show in the inventory due to lack of space.");
+			Bukkit.getLogger().warning("[SavingBug][LostItems2] There were " + failed.size() + " of these items, so now the inventory is being compacted.");
+			
 			BankUtils.compactInventory(inventoryItems, rows * 9);
 			List<ItemStack> newFailed = new ArrayList<ItemStack>();
 			
@@ -180,6 +184,8 @@ public class BankInventoryHolder implements InventoryHolder {
 			}
 			
 			failed = newFailed;
+			Bukkit.getLogger().warning("[SavingBug][LostItems2] After compacting the inventory, there are " + newFailed.size() + " items which could not be placed.");
+			
 			
 		}
 		
@@ -192,7 +198,12 @@ public class BankInventoryHolder implements InventoryHolder {
 				.mapToObj((i) -> {
 					try {
 						return new DBBankItem(inventoryItems[i], i);
-					} catch (IOException e) { return null; }
+					} catch (IOException e) {
+						Bukkit.getLogger().warning("[SavingBug][LostItems4] Another fucking IOException occurred when instantiating a DBBankItem.");
+						Bukkit.getLogger().warning("[SavingBug][LostItems4] This occurred when converting the new items (may have been compacted, moved around, during loading) to DBBankItems.");
+						Bukkit.getLogger().warning("[SavingBug][LostItems4] The item was " + (inventoryItems[i] == null ? "null" : inventoryItems[i].serialize().toString()));
+						return null;
+					}
 				})
 				.filter((i) -> i != null)
 				.collect(Collectors.toList());
@@ -203,7 +214,14 @@ public class BankInventoryHolder implements InventoryHolder {
 			.map((i) -> {
 				try {
 					return new DBBankItem(i, -1);
-				} catch (IOException e) { return null; }
+				} catch (IOException e) {
+					
+					Bukkit.getLogger().warning("[SavingBug][LostItems3] Some fucking exception occurred when instantiating a DBBankItem for a failed item.");
+					Bukkit.getLogger().warning("[SavingBug][LostItems3] This means it will now be null. The item was: " + (i == null ? "null" : i.serialize().toString()));
+					e.printStackTrace();
+					return null;
+					
+				}
 			})
 			.filter((i) -> i != null)
 			.forEach((i) -> newItems.add(i));
@@ -318,7 +336,6 @@ public class BankInventoryHolder implements InventoryHolder {
 		if (Bukkit.getPlayer(ownerUUID) != null
 				&& this.getInventory().getViewers().contains(Bukkit.getPlayer(ownerUUID)))
 			throw new IllegalStateException(ownerName + " is already viewing the BankMenu.");
-		
 		Player p = Bukkit.getPlayer(viewerUUID);
 		if (p == null)
 			throw new IllegalStateException("Player must be online to open bank.");
@@ -336,12 +353,25 @@ public class BankInventoryHolder implements InventoryHolder {
 				Database.getCollection(Banks.class).createBank(bank);
 			}
 			
-			bank = this.loadBank(bank);
+			DBBank newBank = this.loadBank(bank);
 			
 			// Save it (should work, same ID)
-			if (bank != null)
-				Database.getCollection(Banks.class).save(bank);
+			if (newBank != null) {
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] (in open()) The bank changed during loading so it is now being resaved.");
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] While this shouldn't cause items to be lost... it might have done. Idk");
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] There were " + bank.getItems().size() + " items before, now there are " + newBank.getItems().size());
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] List of items before:");
+				for (DBBankItem item : bank.getItems())
+					Bukkit.getLogger().warning("[SavingBug][LostItems5][Before] - " + item.toItemStack().serialize());
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] And after:");
+				for (DBBankItem item : newBank.getItems())
+					Bukkit.getLogger().warning("[SavingBug][LostItems5][Before] - " + item.toItemStack().serialize());
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] Now attempting to save this.");
+				WriteResult res = Database.getCollection(Banks.class).save(newBank);
+				Bukkit.getLogger().warning("[SavingBug][LostItems5] Write result was: " + res.toString());
+			}
 			
+			bank = newBank;
 			Player player = Bukkit.getPlayer(viewerUUID);
 			
 			if (player != null) {
@@ -420,7 +450,13 @@ public class BankInventoryHolder implements InventoryHolder {
 					if (newItems[i] != null)
 						try {
 							items.add(new DBBankItem(newItems[i], i));
-						} catch (IOException e) {}
+						} catch (Exception e) {
+							Bukkit.getLogger().warning("[SavingBug][LostItems] For whatever reason, an item failed to be saved in bank of " + (ownerUUID.toString()));
+							Bukkit.getLogger().warning("[SavingBug][LostItems] The slot (" + i + ") has already been cleared of what was there, and should have been replaced with this, but replacing it failed.");
+							Bukkit.getLogger().warning("[SavingBug][LostItems] Some exception occurred of type " + e.getClass().getName() + ", message: " + e.getMessage());
+							Bukkit.getLogger().warning("[SavingBug][LostItems] The failed item was " + newItems[i].serialize().toString());
+							e.printStackTrace();
+						}
 				}
 				
 				// Save it
