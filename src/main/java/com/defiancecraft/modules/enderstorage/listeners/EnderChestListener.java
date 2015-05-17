@@ -1,5 +1,9 @@
 package com.defiancecraft.modules.enderstorage.listeners;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -17,6 +21,8 @@ import com.defiancecraft.modules.enderstorage.banks.BankInventoryHolder;
 
 public class EnderChestListener implements Listener {
 
+	private static List<UUID> pleaseWaited = new ArrayList<UUID>();
+	
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerInteract(PlayerInteractEvent e) {
 		
@@ -37,16 +43,21 @@ public class EnderChestListener implements Listener {
 			
 			BankInventoryHolder holder = BankInventoryHolder.getOpenBank(p.getUniqueId());
 			if (holder.isSaving()) {
-				System.out.println("[SavingBug] Bank is apparently saving.");
+				System.out.println("[SavingBug] Bank is apparently saving for user " + p.getName() + " (UUID " + p.getUniqueId().toString() + ")");
+				p.sendMessage(ChatColor.GRAY + "Please wait...");
 			} else {
-				System.out.println("[SavingBug] Bank wasn't saving. Attempting to save now.");
+				System.out.println("[SavingBug] Bank wasn't saving. Attempting to save now for user " + p.getName() + " (UUID " + p.getUniqueId().toString() + ")");
 				holder.save();
+				p.sendMessage(ChatColor.GRAY + "Please wait...");
 			}
 			
-			p.sendMessage(ChatColor.GRAY + "Please wait...");
+			pleaseWaited.add(p.getUniqueId());
 			return;
 			
 		}
+		
+		if (pleaseWaited.contains(p.getUniqueId()) && pleaseWaited.remove(p.getUniqueId()))
+			System.out.println("[SavingBug] User '" + p.getName() + "' (UUID " + p.getUniqueId().toString() + ") is now able to open bank after being told to please wait!");
 		
 		BankInventoryHolder holder = new BankInventoryHolder(p);
 		holder.open();
