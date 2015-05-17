@@ -357,16 +357,18 @@ public class BankInventoryHolder implements InventoryHolder {
 			
 			// Save it (should work, same ID)
 			if (newBank != null) {
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] (in open()) The bank changed during loading so it is now being resaved.");
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] While this shouldn't cause items to be lost... it might have done. Idk");
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] There were " + bank.getItems().size() + " items before, now there are " + newBank.getItems().size());
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] List of items before:");
-				for (DBBankItem item : bank.getItems())
-					Bukkit.getLogger().warning("[SavingBug][LostItems5][Before] - " + item.toItemStack().serialize());
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] And after:");
-				for (DBBankItem item : newBank.getItems())
-					Bukkit.getLogger().warning("[SavingBug][LostItems5][Before] - " + item.toItemStack().serialize());
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] Now attempting to save this.");
+				if (bank.getItems().size() != newBank.getItems().size()) {
+					Bukkit.getLogger().warning("[SavingBug][LostItems5] (in open()) The bank changed during loading so it is now being resaved.");
+					Bukkit.getLogger().warning("[SavingBug][LostItems5] While this shouldn't cause items to be lost... it might have done. Idk");
+					Bukkit.getLogger().warning("[SavingBug][LostItems5] There were " + bank.getItems().size() + " items before, now there are " + newBank.getItems().size());
+					Bukkit.getLogger().warning("[SavingBug][LostItems5] List of items before:");
+					for (DBBankItem item : bank.getItems())
+						Bukkit.getLogger().warning("[SavingBug][LostItems5][Before] - " + item.toItemStack().serialize());
+					Bukkit.getLogger().warning("[SavingBug][LostItems5] And after:");
+					for (DBBankItem item : newBank.getItems())
+						Bukkit.getLogger().warning("[SavingBug][LostItems5][After] - " + item.toItemStack().serialize());
+					Bukkit.getLogger().warning("[SavingBug][LostItems5] Now attempting to save this.");
+				}
 				WriteResult res = Database.getCollection(Banks.class).save(newBank);
 				Bukkit.getLogger().warning("[SavingBug][LostItems5] Write result was: " + res.toString());
 			}
