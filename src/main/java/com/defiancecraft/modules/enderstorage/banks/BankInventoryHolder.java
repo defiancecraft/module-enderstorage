@@ -37,7 +37,7 @@ import com.mongodb.WriteResult;
 
 public class BankInventoryHolder implements InventoryHolder {
 
-	private static Map<UUID, BankInventoryHolder> openInventories = new HashMap<UUID, BankInventoryHolder>();
+	private volatile static Map<UUID, BankInventoryHolder> openInventories = new HashMap<UUID, BankInventoryHolder>();
 	
 	private String title;
 	private int rows;
