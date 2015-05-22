@@ -39,16 +39,19 @@ public class EnderChestListener implements Listener {
 		e.setCancelled(true);
 		
 		Player p = e.getPlayer();
+		
 		if (BankInventoryHolder.isUserViewingBank(p.getUniqueId())) {
 			
 			BankInventoryHolder holder = BankInventoryHolder.getOpenBank(p.getUniqueId());
 			if (holder.isSaving()) {
 				System.out.println("[SavingBug] Bank is apparently saving for user " + p.getName() + " (UUID " + p.getUniqueId().toString() + ")");
 				p.sendMessage(ChatColor.GRAY + "Please wait...");
-			} else {
+			} else if (!holder.getInventory().getViewers().contains(p)) {
 				System.out.println("[SavingBug] Bank wasn't saving. Attempting to save now for user " + p.getName() + " (UUID " + p.getUniqueId().toString() + ")");
 				holder.save();
 				p.sendMessage(ChatColor.GRAY + "Please wait...");
+			} else {
+				p.sendMessage(ChatColor.RED + "Your enderchest is still open! Close it first.");
 			}
 			
 			pleaseWaited.add(p.getUniqueId());
@@ -98,7 +101,7 @@ public class EnderChestListener implements Listener {
 		
 	}
 	
-	@EventHandler(priority = EventPriority.LOWEST)
+	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onInventoryClose(InventoryCloseEvent e) {
 		
 		// We only care about BankInventoryHolders
