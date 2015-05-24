@@ -3,18 +3,17 @@ package com.defiancecraft.modules.enderstorage;
 import java.util.concurrent.ExecutionException;
 
 import org.bukkit.plugin.PluginManager;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import com.defiancecraft.core.command.CommandRegistry;
 import com.defiancecraft.core.database.collections.Collection;
-import com.defiancecraft.core.modules.Module;
+import com.defiancecraft.core.modules.impl.JavaModule;
 import com.defiancecraft.modules.enderstorage.banks.BankInventoryHolder;
 import com.defiancecraft.modules.enderstorage.commands.BankCommands;
 import com.defiancecraft.modules.enderstorage.database.collections.Banks;
 import com.defiancecraft.modules.enderstorage.listeners.EnderChestListener;
 import com.defiancecraft.modules.enderstorage.utils.EnderStorageConfig;
 
-public class EnderStorage extends JavaPlugin implements Module {
+public class EnderStorage extends JavaModule {
 
 	private static EnderStorageConfig config = null;
 	
