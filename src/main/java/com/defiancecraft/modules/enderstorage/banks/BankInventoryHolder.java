@@ -1,7 +1,12 @@
 package com.defiancecraft.modules.enderstorage.banks;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +31,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import com.defiancecraft.core.api.User;
 import com.defiancecraft.core.database.Database;
 import com.defiancecraft.core.database.collections.Users;
+import com.defiancecraft.core.util.FileUtils;
 import com.defiancecraft.modules.enderstorage.EnderStorage;
 import com.defiancecraft.modules.enderstorage.database.collections.Banks;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank;
@@ -437,6 +443,9 @@ public class BankInventoryHolder implements InventoryHolder {
 				// Convert ItemStack[] to List<DBBankItem>
 				//
 				List<DBBankItem> items = new ArrayList<DBBankItem>(bank.getItems());
+				List<DBBankItem> oldItems = new ArrayList<>(items);
+				int itemsSize = items.size();
+				
 				ItemStack[] newItems = getInventory().getContents();
 				
 				// IMPORTANT: must only go up to rows * 9, or else
@@ -459,6 +468,38 @@ public class BankInventoryHolder implements InventoryHolder {
 							Bukkit.getLogger().warning("[SavingBug][LostItems] The failed item was " + newItems[i].serialize().toString());
 							e.printStackTrace();
 						}
+				}
+				
+				// Log if they remove more than the inventory space they have!
+				// Calculate their free inventory space - just use 36 if they're
+				// offline. Otherwise, count free slots.
+				long invSpace = Bukkit.getPlayer(ownerUUID) == null     ? 36 :
+							    !Bukkit.getPlayer(ownerUUID).isOnline() ? 36 :
+							    Arrays.stream(Bukkit.getPlayer(ownerUUID).getInventory().getContents())
+							   		.filter((i) -> i == null)
+							   		.count();
+				
+				if (items.size() <= itemsSize - invSpace) {
+					try {
+						String timeStamp = "[" + Instant.now().toString() + "] ";
+						File log = FileUtils.getLogFile("enderstorage.log");
+						PrintWriter out = new PrintWriter(new FileOutputStream(log, true));
+						out.println(timeStamp + "More than the maximum number of items to be removed were removed for player (UUID: " + this.ownerUUID + ")");
+						out.println(timeStamp + "The items (" + itemsSize + " of them) they had before this removal were the following:");
+						for (DBBankItem item : oldItems)
+							out.println(timeStamp + "- " + item.toItemStack().serialize().toString());
+						out.println(timeStamp);
+						out.println(timeStamp + "The items they had after (" + items.size() + " of them) were the following:");
+						for (DBBankItem item : items)
+							out.println(timeStamp + "- " + item.toItemStack().serialize().toString());
+						out.println(timeStamp + "------------------------------");
+						out.flush();
+						out.close();
+					} catch (IOException e) {
+						Bukkit.getLogger().warning("[SavingBug][WellFuck] An exception occurred while trying to save an exception...");
+						Bukkit.getLogger().warning("[SavingBug][WellFuck] The stack trace is below.");
+						e.printStackTrace();
+					}
 				}
 				
 				// Save it
