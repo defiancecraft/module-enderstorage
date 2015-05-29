@@ -38,7 +38,6 @@ import com.defiancecraft.modules.enderstorage.database.documents.DBBank;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank.DBBankItem;
 import com.mongodb.DBRef;
 import com.mongodb.MongoException;
-import com.mongodb.WriteResult;
 
 
 public class BankInventoryHolder implements InventoryHolder {
@@ -375,8 +374,7 @@ public class BankInventoryHolder implements InventoryHolder {
 						Bukkit.getLogger().warning("[SavingBug][LostItems5][After] - " + item.toItemStack().serialize());
 					Bukkit.getLogger().warning("[SavingBug][LostItems5] Now attempting to save this.");
 				}
-				WriteResult res = Database.getCollection(Banks.class).save(newBank);
-				Bukkit.getLogger().warning("[SavingBug][LostItems5] Write result was: " + res.toString());
+				Database.getCollection(Banks.class).save(newBank);
 			}
 			
 			bank = newBank;
@@ -512,13 +510,8 @@ public class BankInventoryHolder implements InventoryHolder {
 				
 			} catch (Throwable e) {
 				
-				Bukkit.getLogger().warning("[SavingBug] Right, listen here you little shit. I've got an exception in here, its class is: [" + e.getClass().getName() + "]");
-				Bukkit.getLogger().warning("[SavingBug] The stack trace of this is length " + e.getStackTrace().length);
-				Bukkit.getLogger().warning("[SavingBug] ==== Exception's Stack Trace:");
+				Bukkit.getLogger().warning("[SavingBug] Exception occurred during save thread:");
 				e.printStackTrace();
-				Bukkit.getLogger().warning("[SavingBug] ==== My motherfucking Stack Trace:");
-				
-				printStackTrace(e, Thread.currentThread().getStackTrace(), false);
 				
 			}
 			
@@ -526,6 +519,7 @@ public class BankInventoryHolder implements InventoryHolder {
 		
 	}
 	
+	/*
 	private void printStackTrace(Throwable e, StackTraceElement[] trace, boolean isCause) {
 		printStackTrace(e, trace, isCause, 0);
 	}
@@ -541,7 +535,7 @@ public class BankInventoryHolder implements InventoryHolder {
 		else if (depth >= 20)
 			Bukkit.getLogger().warning("[SavingBug] Stopping stack trace dump because recursive function exceeds maximum amount.");
 		
-	}
+	}*/
 	
 	/**
 	 * Checks whether a user is viewing a bank already (this will
