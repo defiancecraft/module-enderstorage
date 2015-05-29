@@ -483,13 +483,29 @@ public class BankInventoryHolder implements InventoryHolder {
 						File log = FileUtils.getLogFile("enderstorage.log");
 						PrintWriter out = new PrintWriter(new FileOutputStream(log, true));
 						out.println(timeStamp + "More than the maximum number of items to be removed were removed for player (UUID: " + this.ownerUUID + ")");
+						
+						// Log items before hand
 						out.println(timeStamp + "The items (" + itemsSize + " of them) they had before this removal were the following:");
 						for (DBBankItem item : oldItems)
 							out.println(timeStamp + "- " + item.toItemStack().serialize().toString());
 						out.println(timeStamp);
+						
+						// Log items they had afterwards
 						out.println(timeStamp + "The items they had after (" + items.size() + " of them) were the following:");
 						for (DBBankItem item : items)
 							out.println(timeStamp + "- " + item.toItemStack().serialize().toString());
+						out.println(timeStamp);
+						
+						// Log different items
+						final List<DBBankItem> finalItems = items;
+						List<DBBankItem> different = oldItems.stream()
+								.filter((a) -> !finalItems.stream()
+										.anyMatch((b) -> b.toItemStack().serialize().equals(a.toItemStack().serialize())))
+								.collect(Collectors.toList());
+						out.println(timeStamp + "The items that were in oldItems but not in the new ones (" + different.size() + " of them):");
+						for (DBBankItem item : different)
+							out.println(timeStamp + "- " + item.toItemStack().serialize().toString());
+						
 						out.println(timeStamp + "------------------------------");
 						out.flush();
 						out.close();
