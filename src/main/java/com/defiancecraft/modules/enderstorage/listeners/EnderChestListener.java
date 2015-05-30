@@ -17,6 +17,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
+import com.defiancecraft.modules.enderstorage.EnderStorage;
 import com.defiancecraft.modules.enderstorage.banks.BankInventoryHolder;
 
 public class EnderChestListener implements Listener {
@@ -40,12 +41,20 @@ public class EnderChestListener implements Listener {
 		
 		Player p = e.getPlayer();
 		
+		if (!BankInventoryHolder.canOpen(p.getUniqueId())) {
+			p.sendMessage(ChatColor.translateAlternateColorCodes('&', EnderStorage.getConfiguration().bankCooldownMsg));
+			return;
+		}
+		
+		
 		if (BankInventoryHolder.isUserViewingBank(p.getUniqueId())) {
 			
 			BankInventoryHolder holder = BankInventoryHolder.getOpenBank(p.getUniqueId());
 			if (holder.isSaving()) {
 				System.out.println("[SavingBug] Bank is apparently saving for user " + p.getName() + " (UUID " + p.getUniqueId().toString() + ")");
 				p.sendMessage(ChatColor.GRAY + "Please wait...");
+			} else if (!holder.isLoaded()) {
+				p.sendMessage(ChatColor.RED + "Your bank is not loaded yet! Please wait for it to load before opening it again.");
 			} else if (!holder.getInventory().getViewers().contains(p)) {
 				System.out.println("[SavingBug] Bank wasn't saving. Attempting to save now for user " + p.getName() + " (UUID " + p.getUniqueId().toString() + ")");
 				holder.save();

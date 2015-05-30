@@ -43,17 +43,20 @@ import com.mongodb.MongoException;
 public class BankInventoryHolder implements InventoryHolder {
 
 	private volatile static Map<UUID, BankInventoryHolder> openInventories = new HashMap<UUID, BankInventoryHolder>();
+	private static Map<UUID, Long> lastClosed = new HashMap<UUID, Long>();
 	
 	private String title;
 	private int rows;
 	private Inventory inventory;
 	private ItemStack[] inventoryItems;
-	
+
+	private boolean opened = false;
 	private boolean saving = false;
 	
 	private UUID ownerUUID;
 	private UUID viewerUUID;
 	private String ownerName;
+	
 	
 	/**
 	 * Constructs a BankInventoryHolder; this allows the
@@ -74,8 +77,6 @@ public class BankInventoryHolder implements InventoryHolder {
 		this.ownerName = p.getName();
 		
 		BankInventoryHolder.openInventories.put(ownerUUID, this);
-		
-		// TODO: make perms offlineplayer
 		
 	}
 	
@@ -333,6 +334,14 @@ public class BankInventoryHolder implements InventoryHolder {
 	}
 	
 	/**
+	 * Checks whether the bank contents has actually been loaded.
+	 * @return Whether the bank is loaded
+	 */
+	public boolean isLoaded() {
+		return this.opened;
+	}
+	
+	/**
 	 * Opens the inventory, showing to the player asynchronously
 	 * as it loads from the database.
 	 */
@@ -346,7 +355,7 @@ public class BankInventoryHolder implements InventoryHolder {
 			throw new IllegalStateException("Player must be online to open bank.");
 		
 		Database.getExecutorService().submit(() -> {
-		
+
 			User user = User.findByUUIDOrCreate(ownerUUID, ownerName);
 			Users users = Database.getCollection(Users.class);
 			DBBank bank = Database.getCollection(Banks.class).findByUser(user.getDBU());
@@ -390,9 +399,11 @@ public class BankInventoryHolder implements InventoryHolder {
 					);
 				
 				// Open the inv
+				// Unlock the lock on the NEXT tick.
 				new BukkitRunnable() {
 					public void run() {
 						player.openInventory(getInventory());
+						opened = true;
 					}
 				}.runTask(JavaPlugin.getPlugin(EnderStorage.class));
 				
@@ -415,11 +426,14 @@ public class BankInventoryHolder implements InventoryHolder {
 		if (BankInventoryHolder.openInventories.containsKey(ownerUUID)
 				&& BankInventoryHolder.openInventories.get(ownerUUID).isSaving())
 			throw new IllegalStateException("Bank is already saving");
+
+		if (!this.opened)
+			throw new IllegalStateException("Cannot save before bank has opened!");
 		
 		this.saving = true;
 		
 		return Database.getExecutorService().submit(() -> {
-			
+
 			try {
 				
 				User user = User.findByUUIDOrCreate(ownerUUID, ownerName);
@@ -520,14 +534,17 @@ public class BankInventoryHolder implements InventoryHolder {
 				bank.setItems(items);
 				Database.getCollection(Banks.class).save(bank);
 				
-				// Remove from map so they can re-open
-				if (BankInventoryHolder.openInventories.containsKey(ownerUUID))
-					BankInventoryHolder.openInventories.remove(ownerUUID);
-				
 			} catch (Throwable e) {
 				
 				Bukkit.getLogger().warning("[SavingBug] Exception occurred during save thread:");
 				e.printStackTrace();
+				
+			} finally {
+
+				// Remove from map so they can re-open
+				if (BankInventoryHolder.openInventories.containsKey(ownerUUID))
+					BankInventoryHolder.openInventories.remove(ownerUUID);
+				lastClosed.put(ownerUUID, System.currentTimeMillis());
 				
 			}
 			
@@ -589,6 +606,25 @@ public class BankInventoryHolder implements InventoryHolder {
 		
 		for (Future<?> f : futures)
 			f.get();
+		
+	}
+	
+	public static boolean canOpen(UUID uuid) {
+		
+		return !lastClosed.containsKey(uuid)
+					|| (System.currentTimeMillis() - lastClosed.get(uuid)) >= EnderStorage.getConfiguration().bankCooldownMillis;
+		
+	}
+	
+	public static int getRemainingSeconds(UUID uuid) {
+		
+		if (!lastClosed.containsKey(uuid))
+			return 0;
+		
+		long timePassed = System.currentTimeMillis() - lastClosed.get(uuid);
+		long difference = EnderStorage.getConfiguration().bankCooldownMillis - timePassed;
+		
+		return (int) (difference / 1000);
 		
 	}
 	

@@ -20,6 +20,8 @@ public class EnderStorageConfig {
 	public String shittyFuckingMessage = "&cYou don't have perms bro.";
 	public String whitelistMsg = "";
 	public List<String> whitelistWorlds = Arrays.asList("world");
+	public int bankCooldownMillis = 1000;
+	public String bankCooldownMsg = "&9Please wait....";
 	
 	public ItemStack getUpgradeItem() {
 		
