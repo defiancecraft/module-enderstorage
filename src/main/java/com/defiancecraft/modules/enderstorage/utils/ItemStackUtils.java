@@ -34,8 +34,9 @@ public class ItemStackUtils {
 			// Recursively serialize anything that's already a map (in case
 			// it contains items that aren't serial)
 			//---
-			if (entry.getValue() instanceof Map)
+			if (entry.getValue() instanceof Map) {
 				entry.setValue(serializeMap((Map<String, Object>)entry.getValue()));
+			}
 			
 			//---
 			// Attempt to serialize every item in list
@@ -67,6 +68,7 @@ public class ItemStackUtils {
 			if (entry.getValue() instanceof ConfigurationSerializable) {
 				
 				Map<String, Object> serializedValue = new HashMap<String, Object>(((ConfigurationSerializable)entry.getValue()).serialize());
+				serializedValue = serializeMap(serializedValue);
 				serializedValue.put(ConfigurationSerialization.SERIALIZED_TYPE_KEY, ConfigurationSerialization.getAlias((Class<? extends ConfigurationSerializable>)entry.getValue().getClass()));
 				entry.setValue(serializedValue);
 				
