@@ -361,7 +361,7 @@ public class BankInventoryHolder implements InventoryHolder {
 
 			// Create bank if it doesn't exist
 			if (bank == null) {
-				DBRef userRef = new DBRef(users.getDB(), users.getCollectionName(), user.getDBU().getId());
+				DBRef userRef = new DBRef(users.getCollectionName(), user.getDBU().getId());
 				bank = new DBBank(userRef, new ArrayList<DBBankItem>());
 				Database.getCollection(Banks.class).createBank(bank);
 			}
@@ -444,7 +444,7 @@ public class BankInventoryHolder implements InventoryHolder {
 				if (bank == null) {
 					
 					Bukkit.getLogger().warning("[SavingBug][NoBank] They had no bank when trying to save it, which would cause a NPE. Attempting to create it...");
-					bank = new DBBank(new DBRef(users.getDB(), users.getCollectionName(), user.getDBU().getId()), new ArrayList<DBBankItem>());
+					bank = new DBBank(new DBRef(users.getCollectionName(), user.getDBU().getId()), new ArrayList<DBBankItem>());
 					Database.getCollection(Banks.class).createBank(bank);
 					Bukkit.getLogger().warning("[SavingBug][NoBank] It might have saved. Probably has, shouldn't be a NPE now.");
 					
