@@ -1,10 +1,6 @@
 package com.defiancecraft.modules.enderstorage.banks;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -25,16 +22,15 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.ChatColor;
 
 import com.defiancecraft.core.api.User;
 import com.defiancecraft.core.database.Database;
 import com.defiancecraft.core.database.collections.Users;
-import com.defiancecraft.core.util.FileUtils;
 import com.defiancecraft.modules.enderstorage.EnderStorage;
 import com.defiancecraft.modules.enderstorage.database.collections.Banks;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank;
 import com.defiancecraft.modules.enderstorage.database.documents.DBBank.DBBankItem;
+import com.defiancecraft.modules.enderstorage.utils.CompatibilityException;
 import com.mongodb.DBRef;
 import com.mongodb.MongoException;
 
@@ -156,7 +152,12 @@ public class BankInventoryHolder implements InventoryHolder {
 		for (DBBankItem item : items) {
 			
 			int slot = item.getSlot();
-			ItemStack stack = item.toItemStack();
+			ItemStack stack;
+			try {
+				stack = item.toItemStack();
+			} catch (CompatibilityException e) {
+				continue;
+			}
 			
 			// If the desired slot is empty, and the slot
 			// is allowed.
@@ -370,7 +371,7 @@ public class BankInventoryHolder implements InventoryHolder {
 			
 			// Save it (should work, same ID)
 			if (newBank != null) {
-				if (bank.getItems().size() != newBank.getItems().size()) {
+				/*[D]if (bank.getItems().size() != newBank.getItems().size()) {
 					Bukkit.getLogger().warning("[SavingBug][LostItems5] (in open()) The bank changed during loading so it is now being resaved.");
 					Bukkit.getLogger().warning("[SavingBug][LostItems5] While this shouldn't cause items to be lost... it might have done. Idk");
 					Bukkit.getLogger().warning("[SavingBug][LostItems5] There were " + bank.getItems().size() + " items before, now there are " + newBank.getItems().size());
@@ -381,7 +382,7 @@ public class BankInventoryHolder implements InventoryHolder {
 					for (DBBankItem item : newBank.getItems())
 						Bukkit.getLogger().warning("[SavingBug][LostItems5][After] - " + item.toItemStack().serialize());
 					Bukkit.getLogger().warning("[SavingBug][LostItems5] Now attempting to save this.");
-				}
+				}*/
 				Database.getCollection(Banks.class).save(newBank);
 			}
 			
@@ -454,8 +455,8 @@ public class BankInventoryHolder implements InventoryHolder {
 				// Convert ItemStack[] to List<DBBankItem>
 				//
 				List<DBBankItem> items = new ArrayList<DBBankItem>(bank.getItems());
-				List<DBBankItem> oldItems = new ArrayList<>(items);
-				int itemsSize = items.size();
+//[D]			List<DBBankItem> oldItems = new ArrayList<>(items);
+//[D]			int itemsSize = items.size();
 				
 				ItemStack[] newItems = getInventory().getContents();
 				
@@ -484,13 +485,13 @@ public class BankInventoryHolder implements InventoryHolder {
 				// Log if they remove more than the inventory space they have!
 				// Calculate their free inventory space - just use 36 if they're
 				// offline. Otherwise, count free slots.
-				long invSpace = Bukkit.getPlayer(ownerUUID) == null     ? 36 :
-							    !Bukkit.getPlayer(ownerUUID).isOnline() ? 36 :
-							    Arrays.stream(Bukkit.getPlayer(ownerUUID).getInventory().getContents())
-							   		.filter((i) -> i == null)
-							   		.count();
+//[D]			long invSpace = Bukkit.getPlayer(ownerUUID) == null     ? 36 :
+//[D]						    !Bukkit.getPlayer(ownerUUID).isOnline() ? 36 :
+//[D]						    Arrays.stream(Bukkit.getPlayer(ownerUUID).getInventory().getContents())
+//[D]						   		.filter((i) -> i == null)
+//[D]						   		.count();
 				
-				if (items.size() <= itemsSize - invSpace) {
+				/*[D]if (items.size() <= itemsSize - invSpace) {
 					try {
 						String timeStamp = "[" + Instant.now().toString() + "] ";
 						File log = FileUtils.getLogFile("enderstorage.log");
@@ -527,7 +528,7 @@ public class BankInventoryHolder implements InventoryHolder {
 						Bukkit.getLogger().warning("[SavingBug][WellFuck] The stack trace is below.");
 						e.printStackTrace();
 					}
-				}
+				}*/
 				
 				// Save it
 				bank.setItems(items);

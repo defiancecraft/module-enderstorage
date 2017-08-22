@@ -10,6 +10,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.MaterialData;
 
 import com.defiancecraft.core.database.documents.Document;
+import com.defiancecraft.modules.enderstorage.utils.CompatibilityException;
 import com.defiancecraft.modules.enderstorage.utils.ItemStackUtils;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -106,9 +107,13 @@ public class DBBank extends Document {
 		/**
 		 * Converts the DBBankItem to an ItemStack. 
 		 * @return ItemStack
+		 * @throws Exception If the DBBankItem cannot be converted to an ItemStack (for compatibility reasons, etc.)
 		 */
 		@SuppressWarnings("deprecation")
-		public ItemStack toItemStack() {
+		public ItemStack toItemStack() throws CompatibilityException {
+			
+			if (getType() == null)
+				throw new CompatibilityException("Material of stored ItemStack is not supported");
 			
 			ItemStack ret = new ItemStack(getType(), getAmount());
 			if (getDBO().containsField(FIELD_DATA)) ret.setData(new MaterialData(getType(), getData()));
